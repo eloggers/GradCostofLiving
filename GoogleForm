@@ -1,0 +1,181 @@
+// This code will create a google form with cost of living questions for graduate students
+// This runs in the google apps scripts as a .gs script
+
+function createCustomGoogleForm() {
+  var form = FormApp.create('Monthly Living Expenses'); // Replace 'Custom Google Form' with your desired form title
+
+  form.setDescription('Welcome to our survey! Please fill out the following questions.'); // Add your desired description here
+
+  // Page 1
+  form.addMultipleChoiceItem()
+    .setTitle('What type of student are you?')
+    .setChoiceValues(['Masters','PhD']);
+
+  var numericQuestion1 = form.addTextItem()
+    .setTitle('What year of grad school are you in?')
+    .setRequired(true);
+
+  form.addCheckboxItem()
+    .setTitle('How are you funded?')
+    .setChoiceValues(['GTA', 'GRA', 'External'])
+    .showOtherOption(true);
+
+  var numericQuestion1 = form.addTextItem()
+    .setTitle('What is your monthly stipend POST tax?')
+    .setRequired(true);
+
+  var pageBreak1 = form.addPageBreakItem();
+  pageBreak1.setTitle('Monthly Living Expenses');
+
+  // Page 2
+  var sectionHeader = form.addSectionHeaderItem()
+    .setTitle('Housing Expenses');
+
+  var numericQuestion1 = form.addTextItem()
+    .setTitle('How much do you pay for monthly rent?')
+    .setRequired(true);
+
+  var numericQuestion1 = form.addTextItem()
+    .setTitle('How much do you pay for monthly utilities?')
+    .setRequired(true);
+
+  var numericQuestion1 = form.addTextItem()
+    .setTitle('How many roommates do you have?');
+
+  form.addMultipleChoiceItem()
+    .setTitle('Did you choose the number of roommates as a result of your financial situation?')
+    .setChoiceValues(['Yes','No']);
+
+  form.addMultipleChoiceItem()
+    .setTitle('Have your housing costs increased since starting grad school?')
+    .setChoiceValues(['Yes','No']);
+
+  var numericQuestion1 = form.addTextItem()
+    .setTitle('Roughly, what percent has your housing costs increased since starting grad school?');
+
+  var pageBreak1 = form.addPageBreakItem();
+  pageBreak1.setTitle('Monthly Living Expenses');
+
+  // Page 3
+  var sectionHeader = form.addSectionHeaderItem()
+    .setTitle('Health Expenses');
+
+  var numericQuestion1 = form.addTextItem()
+    .setTitle('Monthly, how much do you pay for health insurance?');
+
+  var numericQuestion1 = form.addTextItem()
+    .setTitle('Monthly, how much do you pay for dental insurance?');
+
+  form.addCheckboxItem()
+    .setTitle('Is your health insurance covered by the University (through a grant or some other mechanism)?')
+    .setChoiceValues(['Yes', 'No'])
+    .showOtherOption(true);
+
+  var numericQuestion1 = form.addTextItem()
+    .setTitle('How much do you pay in unreimbursed health and dental costs?')
+    .setHelpText('On average per month, how much do you have to pay out-of-pocket for prescription drugs, doctor visits, PT appointments, therapy appointments, etc?'); 
+
+  form.addMultipleChoiceItem()
+    .setTitle('Does your financial situation impact how often you get necessary medical care?')
+    .setChoiceValues(['Yes','No'])
+    .setHelpText('This includes dental work, PT visits, eye exams, therapy sessions, etc. Have you ever NOT gone to the doctor when you should have because of your financial situation?'); 
+
+var pageBreak1 = form.addPageBreakItem();
+  pageBreak1.setTitle('Monthly Living Expenses');
+
+  // Page 4
+  var sectionHeader = form.addSectionHeaderItem()
+    .setTitle('Food Expenses');
+
+var numericQuestion1 = form.addTextItem()
+    .setTitle('How much do you spend on groceries per month?')
+    .setHelpText('This only includes food you buy at the grocery store, not costs of eating out.'); 
+
+form.addCheckboxItem()
+    .setTitle('Do you eat less healthy than you would like to due to your financial situation?')
+    .setChoiceValues(['Yes', 'No','Maybe']);
+
+form.addCheckboxItem()
+    .setTitle('Have you ever faced food insecurity due to your financial situation?')
+    .setChoiceValues(['Yes', 'No','Maybe'])
+    .setHelpText('This may mean skipping meals, going to the food bank to get food, or asking family or friends to pay for food if you cannot afford it, etc.');
+
+var pageBreak1 = form.addPageBreakItem();
+  pageBreak1.setTitle('Monthly Living Expenses');
+
+  // Page 5
+  var sectionHeader = form.addSectionHeaderItem()
+    .setTitle('Other Expenses');
+    
+var numericQuestion1 = form.addTextItem()
+    .setTitle('How much do you spend on transportation per month?')
+    .setHelpText('This includes car insurance, bike or car maintenance, gas, car payment, campus parking pass, etc.'); 
+
+var numericQuestion1 = form.addTextItem()
+    .setTitle('How much do you spend on student loan-payments per month?'); 
+
+var numericQuestion1 = form.addTextItem()
+    .setTitle('How much do you spend on your phone plan per month?'); 
+
+var numericQuestion1 = form.addTextItem()
+    .setTitle('How much do you spend on pet, child, or family care/support per month?')
+    .setHelpText('Do you have a pet you have to buy food for? A child you send to daycare? A parent in a nursing home? How much do you spend per month supporting dependents?'); 
+
+var numericQuestion1 = form.addTextItem()
+    .setTitle('If you have out-of-pocket costs for field work and school, what are those average costs per month?')
+    .setHelpText('This includes any personal gear you use in the field like hiking boots and school supplies to get your school work done like notebooks printer paper. You can add up yearly costs and divide by 12 for these costs.'); 
+
+
+var numericQuestion1 = form.addTextItem()
+    .setTitle('Are there any additional other monthly expenses?')
+    .setHelpText('This might include personal hygiene expenses like toothpaste and feminine products or gym memberships. Please limit these to absolutely necessary items that you need to pay for each month.'); 
+
+var pageBreak1 = form.addPageBreakItem();
+  pageBreak1.setTitle('Monthly Living Expenses');
+
+  // Page 6
+  var sectionHeader = form.addSectionHeaderItem()
+    .setTitle('External Financial Support');
+
+form.addMultipleChoiceItem()
+    .setTitle('Did you come into graduate school with a savings account?')
+    .setChoiceValues(['Yes','No']); 
+
+form.addMultipleChoiceItem()
+    .setTitle('Have you received financial support from family while being in grad school?')
+    .setChoiceValues(['Yes','No','Sometimes'])
+    .showOtherOption(true);
+
+form.addMultipleChoiceItem()
+    .setTitle('Have you applied for and recieved funding from grants that are necessary to supplement your stipend?')
+    .setChoiceValues(['Yes','No']);
+
+form.addMultipleChoiceItem()
+    .setTitle('Do you work a second job or pick up supplementary work?')
+    .setChoiceValues(['Yes','Sometimes','No'])
+    .showOtherOption(true);
+
+form.addMultipleChoiceItem()
+    .setTitle('Could you afford to go to grad school without the above financial support?')
+    .setChoiceValues(['Yes','Maybe','No']);
+
+form.addMultipleChoiceItem()
+    .setTitle('Does your financial situation add stress anxiety or worry that affects your work?')
+    .setChoiceValues(['Yes','No']);
+
+var numericQuestion1 = form.addTextItem()
+    .setTitle('Are there any other comments you would like to make about your financial situation?')
+    .setHelpText('Please feel free to include any ideas you have for the department to alleviate your financial needs such as paying for health care, having a gym membership, qualifying for medicaid, etc.');
+
+  // Validation for numeric questions
+  var numericValidation = FormApp.createTextValidation()
+    .setHelpText('Please enter a numeric value.')
+    .requireNumber()
+    .build();
+
+  numericQuestion1.setValidation(numericValidation);
+
+  // Publish the form and get the URL
+  var formUrl = form.getPublishedUrl();
+  Logger.log('Form URL: ' + formUrl);
+}
