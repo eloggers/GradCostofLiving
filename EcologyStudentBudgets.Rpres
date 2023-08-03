@@ -1,0 +1,364 @@
+Ecology Grad Student Budgeting
+========================================================
+autosize: true
+
+```{r data organization, echo = FALSE}
+#Anything above the ===== line is the title of that slide. A new ====== means a new slide.
+
+#load the necessary packages for this presentation. 
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+#First, save the data as a .csv file from Google Surveys. Then, add the file path below to read in the data. The column names are not renamed and are a bit of a headache. Confirm that you are using the appropriate column, or rename them yourself. 
+data<-read.csv("/Users/Elise/Downloads/Monthly Living Expenses2.csv")
+
+#See the breakdown ofgrad student types who filled out the survey
+student_type <- count(data, type =data[,2])
+
+#this makes a separate data frame with just PhD student data 
+phd<-data%>%
+  #this makes the type of student response a factor, which is easier to filter in the future
+  mutate(type = as.factor(What.type.of.student.are.you.))%>%
+  filter(type == "PhD")
+
+#Determine the minimum amount a PhD student is paid in your department. 
+#Make sure to keep this section commented when you run your presentation
+# min(phd$What.is.your.monthly.stipend..POST.TAX.)
+
+#This is a function to make a pie chart based on what column number you input, this will be helpful in future slides
+pie_chart<-function(column){
+  x<-as.numeric(column)
+  data.frame<-count(data, data[,x])%>%
+    rename(response = paste('data[, x]', sep = ''))%>%
+    filter(response!="")
+
+plot.data <- data.frame %>% 
+  arrange(desc(response)) %>%
+  mutate(prop = n / sum(data.frame$n) *100) %>%
+  mutate(ypos = cumsum(prop)- 0.5*prop )
+
+# Basic piechart
+plot<-ggplot(plot.data, aes(x="", y=prop, fill = response)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  theme_void() + 
+  theme(legend.position="left") +
+  #this line does white text on the plot
+  geom_text(aes(y = ypos, label = paste(round(plot.data$prop,1),"%", sep = '')), color = "white", size=6) +
+  scale_fill_manual(values = c("Yes" = "#008000",
+                                "No"="#00bdec",
+                                "Maybe"="#a6238a")) 
+
+return(plot)
+}
+
+```
+
+`r nrow(data)`  responses
+- `r student_type[1,2]` Masters
+- `r student_type[2,2]` PhD
+
+These are the results...
+
+Overview
+========================================================
+```{r data overview, echo = FALSE}
+#Make a consolidated data frame with all the budget totals to calculate necessary expenses
+#Double check this to make sure the appropriate columns are being called. 
+data_frame_totals<-data.frame(
+  stipend_total = data$What.is.your.monthly.stipend.POST.tax.,
+  housing_total = rowSums(data[,c("How.much.do.you.pay.for.monthly.rent.","How.much.do.you.pay.for.monthly.utilities.")]),
+  health_total = rowSums(data[,c("Monthly..how.much.do.you.pay.for.health.insurance.","How.much.do.you.pay.in.unreimbursed.health.and.dental.costs.")]), 
+  food_total = data$How.much.do.you.spend.on.groceries.per.month., 
+  transport_total = data$How.much.do.you.spend.on.transportation.per.month.)%>%
+  #If people use non-numeric values, you can use the "grepl" function to find them and replace them with the appropriate value. This should be accounted for in the google script using numericQuestioni=setValidation(numericValidation)
+  mutate(gear_cost = data$If.you.have.out.of.pocket.costs.for.field.work.and.school..what.are.those.average.costs.per.month., 
+         loan = data$How.much.do.you.spend.on.student.loan.payments.per.month., 
+         phone = data$How.much.do.you.spend.on.your.phone.plan.per.month., 
+         support = data$How.much.do.you.spend.on.pet..child..or.family.care.support.per.month., 
+         other = data[,24])%>%
+  #This replaces all NAs with 0 values. 
+  mutate(across(everything(), ~replace_na(.x, 0)))%>%
+  #Sums up misc costs including field gear, loans, phone plans, etc. If you are considering different things misc, change that here. 
+  mutate(misc_total = gear_cost+loan+phone+support)%>%
+  #Remove misc data costs from spreadsheet so things can be summed across rows.
+  select(-gear_cost:-support)%>%
+  mutate(total_costs = rowSums(.)-stipend_total)
+
+#Using the above data frame, this calculates what percentage of their stipend each respondent spent for each category.
+perc_totals<-data_frame_totals%>%
+  rowwise()%>%
+  mutate(perc_stipend = total_costs/stipend_total*100,
+        perc_house = housing_total/stipend_total*100, 
+        perc_food = food_total/stipend_total*100, 
+        perc_misc = misc_total/stipend_total*100, 
+        perc_transport = transport_total/stipend_total*100, 
+        perc_health = health_total/stipend_total*100,
+        perc_extra = other/stipend_total*100)%>%
+  ungroup()
+
+#make a dataframe with the average percentage of stipend spent on each category
+#if the summarise_all(mean) throws an error, clear your environment and start again
+avg_stipend<-perc_totals%>%
+  #select only the percentage columns
+  select(perc_stipend:perc_extra)%>%
+  #get the mean of each column
+  summarise_all(mean)%>%
+  #make the data frame longer so there is a column with category name and a column with the percentage
+  pivot_longer(cols = perc_stipend:perc_extra)%>%
+  rename(category = name, mean_perc = value)
+
+#save a variable of the average percentage of stipend spent on necessary living expenses
+mean<-mean(perc_totals$perc_stipend) 
+
+over<-sum(perc_totals$perc_stipend>=100) #save a variable of how many students spent more than 100% of their stipend on living. This currently includes all entries that students included, but you may want to remove the "extra" or "misc" column. 
+
+#if you want to write the the manipulated data file anywhere to share now that there is no identifiable informaion, uncomment the line below. 
+#write.csv(data_frame_totals, file = "PATH NAME")
+
+
+#code used to save high resolution plots to share out
+#ggsave(filename = "breakdown_plot_v2.jpeg", plot = breakdown_plot, path = "PATH NAME", device='jpeg', dpi=300)
+
+```
+
+Average stipend, post tax, is \$`r round(mean(data_frame_totals$stipend_total),2)`/month 
+
+**`r  round(mean,2)`%** stipend spent JUST on necessary living expenses 
+
+**`r round(over/nrow(data)*100,2)`%** of respondants spend MORE than 100% of their stipend on the bare necessities
+
+*** 
+
+<font size = "6">
+Necessary items include:
+- rent & utilities
+- groceries
+- health/dental insurance and expenses
+- transportation
+- student loan repayment
+- misc necessities like phone bill, pet/child/parent care, hygiene products, etc. 
+</font>
+
+Stipend Breakdown
+======================================
+
+```{r, echo=FALSE}
+perc_totals%>%
+  dplyr::select(c(stipend_total, total_costs))%>%
+  pivot_longer(stipend_total:total_costs, names_to="Type",values_to="vals")%>%
+  group_by(Type)%>%
+  mutate(m=mean(vals))%>%
+  ungroup()%>%
+  mutate(Type=ifelse(Type=="stipend_total", "Stipend","Expenses"))%>%
+  ggplot(., aes(x=vals, y=Type, group=Type))+
+  geom_violin(aes(fill=Type), alpha=0.3)+
+  geom_vline(aes(xintercept=m),size=2, color="dark red")+
+  geom_point(aes(alpha=0.8))+
+  facet_grid(Type~., scales="free")+
+  theme_minimal()+
+  labs(
+    y="",
+    x="per Month ($)"
+  )+
+  theme(legend.position = "none",
+        axis.text.x=element_blank(),
+        text=element_text(size=14), 
+        strip.text=element_blank())
+
+#sum raw means of expenses
+```
+
+###Make a bar plot of meansof expenses
+
+average of combined necessary expenses = $`r p`
+
+
+
+Stipend By Appointment
+======================================
+```{r Stipend amount by type, echo = FALSE}
+#This makes a data frame of stipend amounts by funding type (grant, teaching assistant, etc) and by student type. 
+detail_stipend<-data%>%
+  dplyr::select(c("Timestamp","What.type.of.student.are.you.","How.are.you.funded.","What.is.your.monthly.stipend.POST.tax."))%>%
+  setNames(c("Time", "Student_Type", "Funding", "Stipend"))%>%
+  group_by(Student_Type)
+
+#We can then summarize this data frame
+summary_stipend<-detail_stipend%>%summarize(mean = mean(Stipend))
+
+#some students have multiple types of funding. This next data frame separates the types of funding. Chose to prioritize GTA first, then GRA. IDK this may not be 100% the right move. 
+####ELISE, WHAT ARE YOUR THOUGHTS####
+summary_funding<-detail_stipend%>%
+  ungroup()%>%
+  mutate(Funding = ifelse(grepl("GTA", Funding), "GTA", ifelse(grepl("GRA", Funding), "GRA", "Other")))%>%
+  group_by(Funding)
+
+mean_funding<-summary_funding%>%summarize(mean = mean(Stipend))
+
+#This creates a box plot of stipend amount based on student type.
+ggplot(detail_stipend, aes(x=Stipend, fill = Student_Type)) +
+  geom_boxplot() +
+  annotate("text", x = 1200, y = 0.4, label = paste("masters: $", summary_stipend$mean[summary_stipend$Student_Type == "Masters"], sep = ""))+
+  annotate("text", x = 1200, y = 0.45, label = paste("PhD: $", round(summary_stipend$mean[summary_stipend$Student_Type == "PhD"],2), sep = ""))+
+  scale_y_continuous(labels = NULL, breaks = NULL) + labs(y = "")+
+  theme_bw()
+
+```
+
+***
+```{r boxplot by funding type, echo = FALSE}
+#This creates a boxplot based on funding type
+ggplot(summary_funding, aes(x=Stipend, fill = Funding)) +
+  geom_boxplot() +
+  annotate("text", x = 1200, y = 0.35, label = paste("GRA: $", round(mean_funding$mean[mean_funding$Funding == "GRA"],2), sep = ""))+
+    annotate("text", x = 1200, y = 0.4, label = paste("GTA: $", round(mean_funding$mean[mean_funding$Funding == "GTA"],2), sep = ""))+
+   annotate("text", x = 1200, y = 0.45, label = paste("Other: $", round(mean_funding$mean[mean_funding$Funding == "Other"],2), sep = ""))+
+  scale_y_continuous(labels = NULL, breaks = NULL) + labs(y = "")+
+  theme_bw()
+```
+
+Average Budget
+=======================================
+For an average month, grad students spend: 
+- `r round(avg_stipend$mean_perc[avg_stipend$category == "perc_house"],2)` on housing
+- `r round(avg_stipend$mean_perc[avg_stipend$category == "perc_food"],2)` on groceries
+- `r round(avg_stipend$mean_perc[avg_stipend$category == "perc_transport"],2)` on transportation
+- `r round(avg_stipend$mean_perc[avg_stipend$category == "perc_health"],2)` on health expenses
+- `r round(avg_stipend$mean_perc[avg_stipend$category == "perc_misc"],2)` on misc. necessities
+
+Total = `r round(avg_stipend$mean_perc[avg_stipend$category == "perc_stipend"],2)`
+
+***
+```{r, echo = FALSE}
+#this adds the proper positioning for text on a pie chart
+avg_stipend_plot_data <- avg_stipend %>% 
+  filter(category != "perc_stipend") %>%
+  arrange(desc(category)) %>%
+  mutate(ypos = cumsum(mean_perc)- 0.5*mean_perc )
+
+#This is a pie chart of the average percentage spent on each category. It WILL NOT add up to 100, since people do not spend exactly 100% of their stipend.
+ggplot(avg_stipend_plot_data, aes(x=category, y=mean_perc, fill=category)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  theme_void() +
+  theme(legend.position="left") +
+  geom_text(aes(y = ypos, label = paste(round(mean_perc,2), "%", sep = "")), color = "white", size=5) +
+  scale_fill_brewer(palette="Dark2")
+
+####SHould we rename this??
+```
+
+Housing
+=======================================================
+```{r diving into housing data, echo = FALSE, fig.align = 'center', fig.height = 4}
+
+#Create a dataframe of just rent costs from the main data frame
+rent<-data.frame(cost = data[,5])
+
+#make a box and whisker plot of costs
+ggplot(rent, aes(x=cost)) +
+  geom_boxplot() +
+  annotate("text", x = 1000, y = 0.2, label = paste("mean = $",round(mean(rent$cost),2), sep = ""))+
+  scale_y_discrete(labels = NULL, breaks = NULL) + labs(y = "")+
+  ggtitle("Rent")+
+  theme_bw()
+
+#how many people have seen increases since starting grad school
+increase <- data[,10]
+
+#how many roommates do people have
+roommates <- data[,7]
+
+#how many people are required to live with a certain number of roommates for financial reasons
+roommate_choice <- count(data, data[,8])%>%
+    rename(response ="data[, 8]")%>%
+    mutate(perc = n/sum(n)*100)
+
+```
+
+On average, `r round(mean(increase),2)`% increase in rent since starting grad school.
+
+`r round(roommate_choice$perc[roommate_choice$response=="Yes"],2)`% said the number of roommates(average = `r round(mean(roommates),2)` roommates) was a financial choice. 
+
+
+Does your financial situation impact how often you get necessary medical care? 
+========================================================
+```{r, echo = FALSE, fig.align = 'center'}
+pie_chart(14)
+```
+
+Have you ever faced food insecurity?
+========================================================
+```{r, echo = FALSE, fig.align = 'center'}
+pie_chart(18)
+```
+
+Do you get external support?
+========================================================
+```{r external cost breakdown, echo = FALSE}
+#savings is column 26
+perc_savings <-count(data, data[,26])%>%
+    rename(response = 'data[, 26]')%>%
+    mutate(perc = n/sum(n)*100)
+
+#family support column 27
+perc_family <-data.frame(response = data[,27])%>%
+    #mutate(response = str_replace(response, "yes*", "Yes"))
+    mutate(response = replace(response, grepl("yes|Yes", response), "Yes"), response = replace(response, grepl("no*", response), "No"), response = replace(response, grepl("My*", response), "Maybe"))%>%
+    group_by(response)%>%
+    count()%>%
+    ungroup()%>%
+    mutate(perc = n/sum(n)*100)
+
+perc_grant <-count(data, data[,28])%>%
+    rename(response = 'data[, 28]')%>%
+    mutate(perc = n/sum(n)*100)
+
+#second job is columb 29
+perc_job <-count(data, data[,29])%>%
+    rename(response = 'data[, 29]')%>%
+    mutate(perc = n/sum(n)*100)
+
+```
+
+- `r round(perc_savings$perc[perc_savings$response == "Yes"], 2)`% savings account 
+- `r round(perc_family$perc[perc_family$response == "Yes"], 2)`% family support
+- `r round(perc_grant$perc[perc_grant$response == "Yes"], 2)`% external grants
+- `r round(perc_job$perc[perc_job$response == "Yes"], 2) + round(perc_job$perc[perc_job$response == "Sometimes"], 2)`% sometimes or always have a second job/supplementary work
+
+***
+Could you get through grad school without this external support?
+```{r, echo=FALSE, fig.height = 5}
+pie_chart(30)
+```
+
+Does your financial situation cause stress or worry you that affects your work?
+========================================================
+```{r, echo = FALSE, fig.align = 'center'}
+pie_chart(31)
+```
+
+
+Takeaways and Suggestions 
+========================================================
+```{r, echo = FALSE}
+#column 23 is out of pocket for school expenses 
+school_expenses <-data.frame(cost = data[,23])%>%
+  filter(cost>=0&!grepl("High", cost))%>%
+  mutate(cost = as.numeric(cost))
+
+```
+
+- [Enter Suggestions Submitted Here]
+
+- [Things to think about: health insurance, field gear, gym memberships, etc.]
+
+-
+
+-
+
+
+
+
