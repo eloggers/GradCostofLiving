@@ -11,7 +11,7 @@ library(ggplot2)
 library(tidyr)
 
 #First, save the data as a .csv file from Google Surveys. Then, add the file path below to read in the data. The column names are not renamed and are a bit of a headache. Confirm that you are using the appropriate column, or rename them yourself. 
-data<-read.csv("/Users/Elise/Downloads/Monthly Living Expenses2.csv")
+data<-read.csv("example.csv")
 
 #See the breakdown ofgrad student types who filled out the survey
 student_type <- count(data, type =data[,2])
