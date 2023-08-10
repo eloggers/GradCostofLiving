@@ -160,20 +160,15 @@ perc_totals%>%
   theme_minimal()+
   labs(
     y="",
-    x="per Month ($)"
+    x="per month ($)"
   )+
   theme(legend.position = "none",
-        axis.text.x=element_blank(),
+       # axis.text.x=element_blank(),
         text=element_text(size=14), 
         strip.text=element_blank())
-
-#sum raw means of expenses
 ```
 
-###Make a bar plot of meansof expenses
-
-average of combined necessary expenses = $`r p`
-
+mean stipend = $`r mean(perc_totals$stipend_total)`
 
 
 Stipend By Appointment
@@ -221,6 +216,38 @@ ggplot(summary_funding, aes(x=Stipend, fill = Funding)) +
 
 Average Budget
 =======================================
+
+```{r, echo=FALSE}
+#sum raw means of expenses
+perc_totals%>%
+  dplyr::select(c(housing_total, health_total, food_total, transport_total))%>%
+  pivot_longer(housing_total:transport_total, names_to="Type",values_to="vals")%>%
+  group_by(Type)%>%
+  mutate(m=mean(vals))%>%
+  ungroup()%>%
+  mutate(Type=ifelse(Type=="housing_total", "Housing",
+                     ifelse(Type=="health_total","Health",
+                            ifelse(Type=="food_total","Groceries","Transport"))))%>%
+  ggplot(., aes(x=vals, y=Type, group=Type))+
+  geom_violin(aes(fill=Type), alpha=0.3)+
+  geom_vline(aes(xintercept=m),size=2, color="dark red")+
+  geom_point(aes(alpha=0.8))+
+  facet_grid(Type~., scales="free")+
+  theme_minimal()+
+  labs(
+    y="",
+    x="per month ($)",
+    caption="Red line indicates mean"
+  )+
+  theme(legend.position = "none",
+        axis.text.x=element_blank(),
+        text=element_text(size=14), 
+        strip.text=element_blank())
+```
+
+mean of combined necessary expenses = $`r round(mean(perc_totals$total_costs), digits=2)`
+***
+
 For an average month, grad students spend: 
 - `r round(avg_stipend$mean_perc[avg_stipend$category == "perc_house"],2)` on housing
 - `r round(avg_stipend$mean_perc[avg_stipend$category == "perc_food"],2)` on groceries
@@ -230,25 +257,6 @@ For an average month, grad students spend:
 
 Total = `r round(avg_stipend$mean_perc[avg_stipend$category == "perc_stipend"],2)`
 
-***
-```{r, echo = FALSE}
-#this adds the proper positioning for text on a pie chart
-avg_stipend_plot_data <- avg_stipend %>% 
-  filter(category != "perc_stipend") %>%
-  arrange(desc(category)) %>%
-  mutate(ypos = cumsum(mean_perc)- 0.5*mean_perc )
-
-#This is a pie chart of the average percentage spent on each category. It WILL NOT add up to 100, since people do not spend exactly 100% of their stipend.
-ggplot(avg_stipend_plot_data, aes(x=category, y=mean_perc, fill=category)) +
-  geom_bar(stat="identity", width=1, color="white") +
-  coord_polar("y", start=0) +
-  theme_void() +
-  theme(legend.position="left") +
-  geom_text(aes(y = ypos, label = paste(round(mean_perc,2), "%", sep = "")), color = "white", size=5) +
-  scale_fill_brewer(palette="Dark2")
-
-####SHould we rename this??
-```
 
 Housing
 =======================================================
@@ -266,14 +274,14 @@ ggplot(rent, aes(x=cost)) +
   theme_bw()
 
 #how many people have seen increases since starting grad school
-increase <- data[,10]
+increase <- data$Roughly..what.percent.has.your.housing.costs.increased.since.starting.grad.school.
 
 #how many roommates do people have
 roommates <- data[,7]
 
 #how many people are required to live with a certain number of roommates for financial reasons
-roommate_choice <- count(data, data[,8])%>%
-    rename(response ="data[, 8]")%>%
+roommate_choice <- count(data, data$Did.you.choose.the.number.of.roommates.as.a.result.of.your.financial.situation.)%>%
+    rename(response ="data$Did.you.choose.the.number.of.roommates.as.a.result.of.your.financial.situation.")%>%
     mutate(perc = n/sum(n)*100)
 
 ```
@@ -286,25 +294,25 @@ On average, `r round(mean(increase),2)`% increase in rent since starting grad sc
 Does your financial situation impact how often you get necessary medical care? 
 ========================================================
 ```{r, echo = FALSE, fig.align = 'center'}
-pie_chart(14)
+pie_chart(16)
 ```
 
 Have you ever faced food insecurity?
 ========================================================
 ```{r, echo = FALSE, fig.align = 'center'}
-pie_chart(18)
+pie_chart(19)
 ```
 
 Do you get external support?
 ========================================================
 ```{r external cost breakdown, echo = FALSE}
 #savings is column 26
-perc_savings <-count(data, data[,26])%>%
-    rename(response = 'data[, 26]')%>%
+perc_savings <-count(data, data$Did.you.come.into.graduate.school.with.a.savings.account.)%>%
+    rename(response = 'data$Did.you.come.into.graduate.school.with.a.savings.account.')%>%
     mutate(perc = n/sum(n)*100)
 
 #family support column 27
-perc_family <-data.frame(response = data[,27])%>%
+perc_family <-data.frame(response = data$Have.you.received.financial.support.from.family.while.being.in.grad.school.)%>%
     #mutate(response = str_replace(response, "yes*", "Yes"))
     mutate(response = replace(response, grepl("yes|Yes", response), "Yes"), response = replace(response, grepl("no*", response), "No"), response = replace(response, grepl("My*", response), "Maybe"))%>%
     group_by(response)%>%
@@ -312,20 +320,15 @@ perc_family <-data.frame(response = data[,27])%>%
     ungroup()%>%
     mutate(perc = n/sum(n)*100)
 
-perc_grant <-count(data, data[,28])%>%
-    rename(response = 'data[, 28]')%>%
-    mutate(perc = n/sum(n)*100)
-
 #second job is columb 29
-perc_job <-count(data, data[,29])%>%
-    rename(response = 'data[, 29]')%>%
+perc_job <-count(data, data$Do.you.work.a.second.job.or.pick.up.supplementary.work.)%>%
+    rename(response = 'data$Do.you.work.a.second.job.or.pick.up.supplementary.work.')%>%
     mutate(perc = n/sum(n)*100)
 
 ```
 
 - `r round(perc_savings$perc[perc_savings$response == "Yes"], 2)`% savings account 
 - `r round(perc_family$perc[perc_family$response == "Yes"], 2)`% family support
-- `r round(perc_grant$perc[perc_grant$response == "Yes"], 2)`% external grants
 - `r round(perc_job$perc[perc_job$response == "Yes"], 2) + round(perc_job$perc[perc_job$response == "Sometimes"], 2)`% sometimes or always have a second job/supplementary work
 
 ***
@@ -345,7 +348,7 @@ Takeaways and Suggestions
 ========================================================
 ```{r, echo = FALSE}
 #column 23 is out of pocket for school expenses 
-school_expenses <-data.frame(cost = data[,23])%>%
+school_expenses <-data.frame(cost = data$If.you.have.out.of.pocket.costs.for.field.work.and.school..what.are.those.average.costs.per.month.)%>%
   filter(cost>=0&!grepl("High", cost))%>%
   mutate(cost = as.numeric(cost))
 
