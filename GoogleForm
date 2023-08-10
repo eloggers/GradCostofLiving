@@ -2,7 +2,7 @@
 // This runs in the google apps scripts as a .gs script
 
 function createCustomGoogleForm() {
-  var form = FormApp.create('Monthly Living Expenses2'); // Replace 'Custom Google Form' with your desired form title
+  var form = FormApp.create('Monthly Living Expenses'); // Replace 'Custom Google Form' with your desired form title
 
   form.setDescription('Welcome to our survey! Please fill out the following questions.'); // Add your desired description here
 
