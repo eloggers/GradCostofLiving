@@ -18,6 +18,8 @@ The two files were made to be run together. That is, if you change or add questi
   7) Save responses from the form in a .csv file
   8) Open and run the EcologyStudentBudgets.Rpres with the associated file.
 
+###
+
 A minimum stipend amount is not automatically provided with these documents. We suggest reviewing your data and using the average necessary expenditures but also taking into account the median rental price for your location before coming up with a recommended stipend amount. Remember, students who fill out the form are probably already struggling to make ends meet. Just because they are paying $600/month for rent does not mean that they are living in a habitable environment (i.e. mold, noise, etc.). We found the MIT living wage calculator reflected similar pay suggestions to the amount we proposed as a comfortable stipend. 
 
 If you have questions, comments, or would like further information, please reach out to elise.loggers@montana.edu
